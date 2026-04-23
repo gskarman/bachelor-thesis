@@ -1,6 +1,6 @@
 run:
-  name: "induction-smoke"
-  notes: "Thread B smoke: 5 iters, pool=10 + n_val=20 drawn from 60/20/20 train split — validates make_splits integration + loop mechanics"
+  name: "induction-default"
+  notes: "Thread B full run: n=200 scoring + pool=20 seed on the 60/20/20 HC3 train split, 30-iter budget, plateau Δ<0.005 × 3. Gemma 4 E4B. Winner frozen for Thread A calibration (D6)."
 
 model:
   name: "gemma4:e4b"
@@ -18,14 +18,14 @@ splits:
   seed: 42
 
 seed:
-  pool_size: 10
+  pool_size: 20
 
 induction:
-  max_iters: 5
+  max_iters: 30
   plateau_threshold: 0.005
   plateau_window: 3
-  misclassified_k: 10
-  scoring_sample: 20
+  misclassified_k: 20
+  scoring_sample: 200
 
 classification:
   num_predict: 16
