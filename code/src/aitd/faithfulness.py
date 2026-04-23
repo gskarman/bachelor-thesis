@@ -13,7 +13,7 @@ import yaml
 from rich.console import Console
 
 from .classifier import classify
-from .data import LABEL_AI, LABEL_HUMAN, Example, load_hc3
+from .data import LABEL_AI, LABEL_HUMAN, Example, load_hc3, make_splits, splits_sha256
 from .ollama_client import OllamaClient, UnparseableResponse
 from .run import RUNS_DIR, _mint_run_id, _setup_logger
 
@@ -89,11 +89,11 @@ def _probe_logprobs_available(client: OllamaClient) -> bool:
     except Exception:
         return True
 
-def _classify_one(client: OllamaClient, text: str, policy: str | None, *, num_predict: int, temperature: float, try_logprobs: bool) -> tuple[int, float | None]:
+def _classify_one(client: OllamaClient, text: str, policy: str | None, *, num_predict: int, temperature: float, try_logprobs: bool, top_logprobs_k: int) -> tuple[int, float | None]:
     system_prompt = policy if policy else None
     if try_logprobs:
         try:
-            p = classify(client, text, num_predict=num_predict, temperature=temperature, system_prompt=system_prompt, return_logprobs=True)
+            p = classify(client, text, num_predict=num_predict, temperature=temperature, system_prompt=system_prompt, return_logprobs=True, top_logprobs_k=top_logprobs_k)
             return p.label, _extract_yes_no_diff(p.logprobs)
         except NotImplementedError:
             pass
@@ -105,7 +105,7 @@ def _classify_one(client: OllamaClient, text: str, policy: str | None, *, num_pr
     except UnparseableResponse:
         return -1, None
 
-def run_faithfulness(client: OllamaClient, policies: dict[str, str | None], examples: list[Example], *, num_predict: int = 16, temperature: float = 0.0, logger=None) -> FaithfulnessReport:
+def run_faithfulness(client: OllamaClient, policies: dict[str, str | None], examples: list[Example], *, num_predict: int = 16, temperature: float = 0.0, top_logprobs_k: int = 10, logger=None) -> FaithfulnessReport:
     log = (lambda m: logger.info(m)) if logger is not None else (lambda m: None)
     names = list(policies.keys())
     try_logprobs = _probe_logprobs_available(client)
@@ -115,7 +115,7 @@ def run_faithfulness(client: OllamaClient, policies: dict[str, str | None], exam
         preds: dict[str, int] = {}
         diffs: dict[str, float | None] = {}
         for name in names:
-            lbl, diff = _classify_one(client, ex.text, policies[name], num_predict=num_predict, temperature=temperature, try_logprobs=try_logprobs)
+            lbl, diff = _classify_one(client, ex.text, policies[name], num_predict=num_predict, temperature=temperature, try_logprobs=try_logprobs, top_logprobs_k=top_logprobs_k)
             preds[name] = lbl
             diffs[name] = diff
         rows.append(PerExample(idx=i - 1, label=ex.label, preds=preds, diffs=diffs))
@@ -179,8 +179,20 @@ def run_ablation(config_path: pathlib.Path) -> pathlib.Path:
         best_path = POLICIES_DIR / f"{best_src}.md"
     best_policy = load_policy_md(best_path)
     policies: dict[str, str | None] = {"best": best_policy, "empty": None, "inverted": INVERTED_POLICY}
-    examples = load_hc3(split=config["data"]["split"], sample_size=config["data"].get("sample_size"), seed=config["data"].get("seed", 42))
-    report = run_faithfulness(client, policies, examples, num_predict=config.get("classification", {}).get("num_predict", 16), temperature=config.get("classification", {}).get("temperature", 0.0), logger=logger)
+    source = config["data"].get("source", "test")
+    n = config["data"].get("sample_size", 100)
+    all_ex = load_hc3(split=config["data"]["split"], sample_size=None, seed=config["data"].get("seed", 42), min_chars=config["data"].get("min_chars", 32))
+    sp = config.get("splits", {})
+    splits = make_splits(all_ex, train=sp.get("train", 0.60), val=sp.get("val", 0.20), test=sp.get("test", 0.20), seed=sp.get("seed", 42))
+    logger.info(f"splits sha256={splits_sha256(splits)[:12]}... | using source={source}")
+    pool = [all_ex[i] for i in splits[source]]
+    humans = [e for e in pool if e.label == LABEL_HUMAN]
+    ais = [e for e in pool if e.label == LABEL_AI]
+    half = n // 2
+    examples = humans[:half] + ais[: n - half]
+    logger.info(f"ablation examples: {len(examples)} (target {n}) from {source} split")
+    cls_cfg = config.get("classification", {})
+    report = run_faithfulness(client, policies, examples, num_predict=cls_cfg.get("num_predict", 16), temperature=cls_cfg.get("temperature", 0.0), top_logprobs_k=cls_cfg.get("top_logprobs_k", 10), logger=logger)
     (run_dir / "faithfulness.jsonl").write_text("".join(json.dumps(asdict(r), ensure_ascii=False) + "\n" for r in report.rows))
     payload = asdict(report); payload.pop("rows", None)
     (run_dir / "faithfulness.json").write_text(json.dumps(payload, indent=2))

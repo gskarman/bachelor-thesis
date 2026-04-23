@@ -1,0 +1,30 @@
+run:
+  name: "faithfulness-default"
+  notes: "Thread B D7 faithfulness ablation: 3 policies (best induced, empty, inverted) × n=100 HC3 test split (unseen during induction). Logprob margin Δ(lp_yes − lp_no) via Thread A's return_logprobs path."
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  seed: 42
+  min_chars: 32
+  source: "test"       # resolve via make_splits; never touched during Phase 1 induction
+  sample_size: 100
+
+splits:
+  train: 0.60
+  val: 0.20
+  test: 0.20
+  seed: 42
+
+faithfulness:
+  best_policy: "REPLACE_WITH_WINNER_ID"   # populated by PR B; resolves to logs/policies/<id>.md
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  return_logprobs: true
+  top_logprobs_k: 10
