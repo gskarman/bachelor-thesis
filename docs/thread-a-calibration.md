@@ -46,17 +46,16 @@ From `docs/decisions.md`:
 2. **Baseline at scale.** Copy `configs/base.yaml` → `configs/e4b-n1000.yaml` (sample_size: 1000). Run it. Add a row to `logs/RUNS.md`. This is the first "real" number for the thesis.
 3. **Per-domain sweep.** 5 configs, one per HC3 split (finance / medicine / open_qa / reddit_eli5 / wiki_csai), sample_size=200 each. Collect into a per-domain table.
 
-## Daily deliverables
+## Execution order (dependency-driven, not day-gated)
 
-| Day | Date | Ship |
-|---|---|---|
-| 1 | Fri 24 Apr | `docs/logprob-spike.md` + `configs/e4b-n1000.yaml` run committed + row in RUNS.md |
-| 2 | Sat 25 Apr | Per-domain breakdown (5 rows in RUNS.md) + first 31B run (start small: n=200 all, confirm wall-clock, then scale) |
-| 3 | Sun 26 Apr | 31B n=1000 all + per-domain (if tractable). Document timing in RUNS.md notes. |
-| 4 | Mon 27 Apr | Idle / support Thread B if B's induction run hits Ollama snags |
-| 5 | Tue 28 Apr | `aitd/calibration.py` shipped. Run over **Thread B's frozen best policy**: extract log-probs on val+test, fit threshold + logistic, report F0.5-optimized operating point + AUROC + ECE. |
-| 6 | Wed 29 Apr | Write Results "baselines + calibration" subsection (Md draft committed; ACM rendering happens in the main thesis doc) |
-| 7 | Thu 30 Apr | Support-only — Gustav is writing Abstracts + Conclusion |
+Push through all of these in one run — open a PR per milestone, orchestrator reviews and merges, keep going. Do not "EOD" between steps.
+
+1. **Logprob spike** → `docs/logprob-spike.md`. (Gemma 4 E4B via Ollama 0.21.1 top-level `logprobs:true` + `top_logprobs:N` — already confirmed.)
+2. **Logprob plumbing** → fill in `classifier.py:return_logprobs` (B landed the stub), plumb through `ollama_client.py`, persist on `Prediction.logprobs`.
+3. **Splits + F0.5** → `aitd.data.make_splits`, `configs/splits.yaml` (seeded 60/20/20), F0.5 in `evaluation.py`. Unblocks Thread B's full induction.
+4. **E4B baselines at scale** → `configs/e4b-n1000.yaml` on HC3 `all` + 5 per-domain n=200 configs. Rows in `RUNS.md`.
+5. **31B parity + scale** → confirm wall-clock on a small run first, then scale. Document timing.
+6. **Calibration layer** → `aitd/calibration.py`, consumes Thread B's frozen best policy from `logs/policies/<id>.md`. Produces `logs/runs/<id>/calibration.json` with chosen threshold, F0.5 on val + test, precision/recall at threshold, AUROC, ECE, reliability-diagram data.
 
 ## Definition of done (by Inl. 5)
 

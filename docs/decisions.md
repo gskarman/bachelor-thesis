@@ -158,19 +158,21 @@ If all local paths fail for Gemma 4 specifically, fall back to the two-call tric
 
 ---
 
-## Schedule — 7 days to Inlämning 5 (2026-04-30 19:00 CEST)
+## Execution mode
 
-| Day | Date | Focus | Deliverable |
-|---|---|---|---|
-| 1 | Fri 24 Apr | Log-prob spike + n=1000 E4B baseline | `docs/logprob-spike.md` with a working call; first 1000-row E4B run on HC3 `all` |
-| 2 | Sat 25 Apr | Per-domain + 31B runs | Per-split breakdown table on E4B; first 31B numbers (n=500 sample if full is slow) |
-| 3 | Sun 26 Apr | Policy induction scaffolding | `aitd/policy.py` proposer + scorer; first 5-iteration induction loop on n=200 subsample |
-| 4 | Mon 27 Apr | Policy induction full run | Final induced policy + trajectory figure (F0.5 vs iter); accepted/rejected count |
-| 5 | Tue 28 Apr | Calibration + faithfulness | `aitd/calibration.py`; ROC + ECE numbers on val/test; policy-ablation table |
-| 6 | Wed 29 Apr | Results + Discussion draft | 4–5 pp Results, 2 pp Discussion in ACM template |
-| 7 | Thu 30 Apr | Abstract (SV + EN), Conclusion, References, submit | Canvas upload before 19:00 |
+Day-by-day scheduling was **superseded on 2026-04-23** — Gustav's directive: push through all scope in one continuous run. Threads open a PR per milestone, the orchestrator reviews and merges, everyone keeps going until the full method is landed (induction + calibration + faithfulness + writing). Blockers come to the orchestrator immediately; nothing is "EOD" until the work is genuinely done or genuinely stuck.
 
-Intro / Background / Method are ported from `Kexjobbsspecifikation.pdf` in parallel with Days 4–7 (cheap text work; interleave with experiment wait-time).
+Deliverable list (unordered, dependency-ordered where noted):
+
+- **Thread A.** Log-prob extraction in `ollama_client.py` + `classifier.py` (fill `return_logprobs`). `aitd.data.make_splits` + `configs/splits.yaml`. F0.5 in `evaluation.py`. Baseline runs — n=1000 E4B on `all` + 5 per-domain n=200. 31B runs as hardware allows. `aitd/calibration.py` over Thread B's frozen policy → ROC / AUROC / ECE / F0.5-optimal operating point.
+- **Thread B.** `aitd/faithfulness.py` (whole-text policy-swap harness) — buildable in parallel. Full induction run at n=200 consuming `make_splits`, max_iters=30, plateau Δ<0.005 × 3. Freeze best policy, announce to orchestrator + Thread A. Faithfulness ablation on n=100 test subsample (best / empty / inverted policy) → ablation table.
+
+Dependency edges that still matter:
+
+- Thread A's splits + logprob path → Thread B's full induction + faithfulness ablation.
+- Thread B's frozen policy → Thread A's calibration.
+
+Inl. 5 deadline (2026-04-30 19:00 CEST) is still real but irrelevant to execution order — just ship.
 
 ---
 

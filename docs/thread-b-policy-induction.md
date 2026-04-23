@@ -50,17 +50,15 @@ From `docs/decisions.md`:
 2. **Smoke-test on n=20.** Seed with 10 labeled examples (balanced yes/no). Run 5 iterations on a 20-example val subsample. Confirm the trajectory logs and accept/reject logic work. Commit both a passing run and the config.
 3. **Full induction run.** n=200 training subsample for scoring, seed pool of 20 labeled examples, iteration budget 30, plateau at Δ < 0.005 over 3 accepted iters. Model: Gemma 4 E4B. Save the winning policy to `logs/policies/<policy_id>.md`.
 
-## Daily deliverables
+## Execution order (dependency-driven, not day-gated)
 
-| Day | Date | Ship |
-|---|---|---|
-| 1 | Fri 24 Apr | Idle / support Thread A on logprob spike |
-| 2 | Sat 25 Apr | Idle / support Thread A. Or start reading seed labeled examples and drafting the initial seed prompt by hand. |
-| 3 | Sun 26 Apr | `aitd/policy.py` scaffolded + 5-iteration smoke-test committed |
-| 4 | Mon 27 Apr | Full induction run at n=200, 30-iter budget. Pick best policy on val F0.5. Save to `logs/policies/<id>.md`. Commit trajectory figure (F0.5 vs. iter). **Freeze and announce on #thesis-design.** |
-| 5 | Tue 28 Apr | `aitd/faithfulness.py` + run whole-text policy-ablation (best vs. empty vs. inverted) on n=100 test-subsample. Output: ablation table with Δlabel rate + Δ(logprob_yes − logprob_no) per policy. |
-| 6 | Wed 29 Apr | Write Results "policy induction + faithfulness" subsection |
-| 7 | Thu 30 Apr | Support-only |
+Push through all of these in one run — open a PR per milestone, orchestrator reviews and merges, keep going. Do not "EOD" between steps.
+
+1. **Scaffolding** (✅ landed in PR #5) — `aitd/policy.py`, induction loop, n=20 smoke.
+2. **Faithfulness module** → `aitd/faithfulness.py` (whole-text policy-swap harness). Can be built in parallel with Thread A's logprob work since the module signature is mostly orthogonal.
+3. **Full induction run** → n=200 using `aitd.data.make_splits` from Thread A's next PR (not the inline split in the smoke config). Max iters=30, plateau Δ<0.005 × 3, Gemma 4 E4B. Save winner to `logs/policies/<id>.md`. **Freeze** the policy and announce to orchestrator + Thread A.
+4. **Faithfulness ablation** → on n=100 test subsample: best vs. empty vs. inverted policy. Output `logs/runs/<id>/faithfulness.md` (or equivalent) with Δlabel rate + mean Δ(logprob_yes − logprob_no) per policy, per-class breakdown.
+5. **Trajectory figure** → F0.5 vs. iter with accepted/rejected markers. Committed image (PNG/SVG) + inline in the policy md.
 
 ## Definition of done (by Inl. 5)
 
