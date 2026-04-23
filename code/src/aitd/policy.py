@@ -128,31 +128,47 @@ def refine(client: OllamaClient, current_policy: str, misclassified: list[Exampl
     prompt = REFINE_TEMPLATE.format(policy=current_policy, f0_5=current_f0_5, examples=_format_examples_block(misclassified))
     return _extract_policy(client.generate(prompt, num_predict=num_predict, temperature=temperature).text)
 
-def induce(client: OllamaClient, seed_examples: list[Example], val_examples: list[Example], *, max_iters: int = 30, plateau_threshold: float = 0.005, plateau_window: int = 3, misclassified_k: int = 20, logger=None) -> list[Iteration]:
+def induce(client: OllamaClient, seed_examples: list[Example], val_examples: list[Example], *, max_iters: int = 30, plateau_threshold: float = 0.005, plateau_window: int = 3, misclassified_k: int = 20, max_consecutive_rejections: int = 5, trajectory_file: pathlib.Path | None = None, logger=None) -> list[Iteration]:
     log = (lambda m: logger.info(m)) if logger is not None else (lambda m: None)
-    policy0 = propose_initial(client, seed_examples)
-    s0 = score_policy(client, policy0, val_examples)
-    traj = [Iteration(0, policy0, s0.f0_5, s0.precision_ai, s0.recall_ai, True, None)]
-    log(f"iter=0 F0.5={s0.f0_5:.3f} P={s0.precision_ai:.3f} R={s0.recall_ai:.3f} (initial)")
-    best, best_hard, recent = traj[0], s0.hard_preds, [s0.f0_5]
-    for it in range(1, max_iters + 1):
-        miscls = _find_misclassified(val_examples, best_hard, misclassified_k)
-        if not miscls:
-            log(f"iter={it} no misclassified examples; stopping"); break
-        try:
-            candidate = refine(client, best.policy_text, miscls, current_f0_5=best.f0_5)
-        except UnparseableResponse as e:
-            log(f"iter={it} refine failed: {e}; stopping"); break
-        sc = score_policy(client, candidate, val_examples)
-        accepted = sc.f0_5 > best.f0_5
-        traj.append(Iteration(it, candidate, sc.f0_5, sc.precision_ai, sc.recall_ai, accepted, best.iter))
-        log(f"iter={it} F0.5={sc.f0_5:.3f} ({'accepted' if accepted else 'rejected'})")
-        if accepted:
-            best, best_hard = traj[-1], sc.hard_preds
-            recent.append(sc.f0_5)
-            window = recent[-plateau_window:]
-            if len(window) == plateau_window and (max(window) - min(window)) < plateau_threshold:
-                log(f"plateau at iter={it} (Δ<{plateau_threshold})"); break
+    traj_fh = trajectory_file.open("w") if trajectory_file is not None else None
+    def _emit(step: Iteration) -> None:
+        traj.append(step)
+        if traj_fh is not None:
+            traj_fh.write(json.dumps(asdict(step), ensure_ascii=False) + "\n")
+            traj_fh.flush()
+    traj: list[Iteration] = []
+    try:
+        policy0 = propose_initial(client, seed_examples)
+        s0 = score_policy(client, policy0, val_examples)
+        _emit(Iteration(0, policy0, s0.f0_5, s0.precision_ai, s0.recall_ai, True, None))
+        log(f"iter=0 F0.5={s0.f0_5:.3f} P={s0.precision_ai:.3f} R={s0.recall_ai:.3f} (initial)")
+        best, best_hard, recent = traj[0], s0.hard_preds, [s0.f0_5]
+        consecutive_rej = 0
+        for it in range(1, max_iters + 1):
+            miscls = _find_misclassified(val_examples, best_hard, misclassified_k)
+            if not miscls:
+                log(f"iter={it} no misclassified examples; stopping"); break
+            try:
+                candidate = refine(client, best.policy_text, miscls, current_f0_5=best.f0_5)
+            except UnparseableResponse as e:
+                log(f"iter={it} refine failed: {e}; stopping"); break
+            sc = score_policy(client, candidate, val_examples)
+            accepted = sc.f0_5 > best.f0_5
+            _emit(Iteration(it, candidate, sc.f0_5, sc.precision_ai, sc.recall_ai, accepted, best.iter))
+            log(f"iter={it} F0.5={sc.f0_5:.3f} ({'accepted' if accepted else 'rejected'})")
+            if accepted:
+                best, best_hard, consecutive_rej = traj[-1], sc.hard_preds, 0
+                recent.append(sc.f0_5)
+                window = recent[-plateau_window:]
+                if len(window) == plateau_window and (max(window) - min(window)) < plateau_threshold:
+                    log(f"plateau at iter={it} (Δ<{plateau_threshold})"); break
+            else:
+                consecutive_rej += 1
+                if consecutive_rej >= max_consecutive_rejections:
+                    log(f"early-stop at iter={it}: {consecutive_rej} consecutive rejections (refiner deadlock at T=0)"); break
+    finally:
+        if traj_fh is not None:
+            traj_fh.close()
     return traj
 
 def run_induction(config_path: pathlib.Path) -> pathlib.Path:
@@ -184,10 +200,7 @@ def run_induction(config_path: pathlib.Path) -> pathlib.Path:
         logger.warning(f"val_ex shorter than requested ({len(val_ex)} < {n_val}); train pool exhausted")
     logger.info(f"seed={len(seed_ex)} val={len(val_ex)}")
     ind = config.get("induction", {})
-    traj = induce(client, seed_ex, val_ex, max_iters=ind.get("max_iters", 30), plateau_threshold=ind.get("plateau_threshold", 0.005), plateau_window=ind.get("plateau_window", 3), misclassified_k=ind.get("misclassified_k", 20), logger=logger)
-    with (run_dir / "trajectory.jsonl").open("w") as f:
-        for step in traj:
-            f.write(json.dumps(asdict(step), ensure_ascii=False) + "\n")
+    traj = induce(client, seed_ex, val_ex, max_iters=ind.get("max_iters", 30), plateau_threshold=ind.get("plateau_threshold", 0.005), plateau_window=ind.get("plateau_window", 3), misclassified_k=ind.get("misclassified_k", 20), max_consecutive_rejections=ind.get("max_consecutive_rejections", 5), trajectory_file=run_dir / "trajectory.jsonl", logger=logger)
     winner = max(traj, key=lambda s: s.f0_5)
     metrics = {"winner_iter": winner.iter, "f0_5": winner.f0_5, "precision_ai": winner.precision_ai, "recall_ai": winner.recall_ai, "iters_run": len(traj), "accepted_count": sum(1 for s in traj if s.accepted), "splits_sha256": splits_hash, "n_seed": len(seed_ex), "n_val": len(val_ex)}
     (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
