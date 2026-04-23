@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from dataclasses import dataclass
@@ -84,3 +85,43 @@ def iter_batches(items: Iterable[Example], size: int) -> Iterable[list[Example]]
             batch = []
     if batch:
         yield batch
+
+
+def make_splits(
+    examples: list[Example],
+    train: float = 0.60,
+    val: float = 0.20,
+    test: float = 0.20,
+    seed: int = 42,
+) -> dict[str, list[int]]:
+    """Deterministic balanced train/val/test split on `examples` indices.
+
+    Shuffles per-label with a seeded RNG so every split is class-balanced.
+    The returned indices refer to positions in `examples` as given.
+    """
+    total = train + val + test
+    if abs(total - 1.0) > 1e-6:
+        raise ValueError(f"Split ratios must sum to 1.0, got {total:.6f}")
+    rng = random.Random(seed)
+    by_label: dict[int, list[int]] = {}
+    for i, ex in enumerate(examples):
+        by_label.setdefault(ex.label, []).append(i)
+    out: dict[str, list[int]] = {"train": [], "val": [], "test": []}
+    for idxs in by_label.values():
+        idxs = idxs[:]
+        rng.shuffle(idxs)
+        n = len(idxs)
+        n_train = int(n * train)
+        n_val = int(n * val)
+        out["train"].extend(idxs[:n_train])
+        out["val"].extend(idxs[n_train : n_train + n_val])
+        out["test"].extend(idxs[n_train + n_val :])
+    for k in out:
+        out[k].sort()
+    return out
+
+
+def splits_sha256(splits: dict[str, list[int]]) -> str:
+    """SHA256 of the canonical JSON of a splits dict. Use for cross-thread hash-verification."""
+    payload = json.dumps(splits, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(payload).hexdigest()

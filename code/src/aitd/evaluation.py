@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import Sequence
 
 import numpy as np
-from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.metrics import f1_score, fbeta_score, roc_auc_score
 
 
 @dataclass
@@ -12,6 +12,7 @@ class Metrics:
     n: int
     n_valid: int
     accuracy: float
+    f0_5: float
     f1: float
     precision_ai: float
     recall_ai: float
@@ -34,7 +35,10 @@ def evaluate(
     n_valid = int(mask.sum())
 
     if n_valid == 0:
-        return Metrics(n=n, n_valid=0, accuracy=0.0, f1=0.0, precision_ai=0.0, recall_ai=0.0)
+        return Metrics(
+            n=n, n_valid=0, accuracy=0.0, f0_5=0.0, f1=0.0,
+            precision_ai=0.0, recall_ai=0.0,
+        )
 
     y, p = labels_arr[mask], preds_arr[mask]
     tp = int(((p == 1) & (y == 1)).sum())
@@ -55,6 +59,7 @@ def evaluate(
         n=n,
         n_valid=n_valid,
         accuracy=float((p == y).mean()),
+        f0_5=float(fbeta_score(y, p, beta=0.5, zero_division=0)),
         f1=float(f1_score(y, p, zero_division=0)),
         precision_ai=float(precision),
         recall_ai=float(recall),

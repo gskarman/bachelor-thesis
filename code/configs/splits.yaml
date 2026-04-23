@@ -1,0 +1,22 @@
+# HC3 train/val/test split spec (D4).
+#
+# Canonical for both threads. Regenerate with:
+#   from aitd.data import load_hc3, make_splits, splits_sha256
+#   ex = load_hc3(split=split, sample_size=None, seed=seed, min_chars=min_chars)
+#   s = make_splits(ex, train=train, val=val, test=test, seed=seed)
+#   splits_sha256(s)
+#
+# The SHA256 below is empty on first commit; populate after a first local run
+# and cache the indices under logs/splits/<sha>.json (gitignored).
+# If `splits_sha256(regenerated)` stops matching, something about the pipeline
+# changed — investigate before consuming downstream.
+
+splits:
+  dataset: hc3
+  split: all
+  seed: 42
+  min_chars: 32
+  train: 0.60
+  val: 0.20
+  test: 0.20
+  sha256: ""  # fill in after first make_splits call

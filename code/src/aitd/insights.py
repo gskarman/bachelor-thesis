@@ -43,8 +43,9 @@ def write_insights(
         "## Metrics",
         "",
         f"- n / n_valid: {metrics['n']} / {metrics['n_valid']}",
-        f"- accuracy: **{metrics['accuracy']:.3f}**",
+        f"- F0.5: **{metrics['f0_5']:.3f}**  _(primary per D9)_",
         f"- F1: **{metrics['f1']:.3f}**",
+        f"- accuracy: {metrics['accuracy']:.3f}",
         f"- precision (AI): {metrics['precision_ai']:.3f}",
         f"- recall (AI): {metrics['recall_ai']:.3f}",
     ]

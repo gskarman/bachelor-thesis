@@ -1,14 +1,14 @@
 run:
-  name: "smoke-test"
-  notes: "n=10 smoke test to validate end-to-end pipeline before real runs"
+  name: "e4b-reddit_eli5-n200"
+  notes: "D8 per-domain — Gemma 4 E4B, HC3 reddit_eli5, n=200, return_logprobs for D9 AUROC/ECE"
 
 model:
   name: "gemma4:e4b"
   host: "http://localhost:11434"
 
 data:
-  split: "all"
-  sample_size: 10
+  split: "reddit_eli5"
+  sample_size: 200
   seed: 42
 
 classification:

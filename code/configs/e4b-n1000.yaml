@@ -1,6 +1,6 @@
 run:
-  name: "smoke-test"
-  notes: "n=10 smoke test to validate end-to-end pipeline before real runs"
+  name: "e4b-n1000-all"
+  notes: "D8 baseline — Gemma 4 E4B, HC3 all, n=1000, return_logprobs on for D6/D9"
 
 model:
   name: "gemma4:e4b"
@@ -8,7 +8,7 @@ model:
 
 data:
   split: "all"
-  sample_size: 10
+  sample_size: 1000
   seed: 42
 
 classification:
