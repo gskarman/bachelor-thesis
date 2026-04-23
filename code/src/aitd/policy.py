@@ -217,7 +217,9 @@ def run_induction(config_path: pathlib.Path) -> pathlib.Path:
         f.write(f"| `{run_id}` | {config['model']['name']} | induction / iters={metrics['iters_run']} | F0.5={winner.f0_5:.3f} P={winner.precision_ai:.3f} R={winner.recall_ai:.3f} | {config.get('run', {}).get('notes', '').strip() or 'policy induction'} |\n")
     try:
         plot_path = plot_trajectory(run_dir / "trajectory.jsonl", run_dir / "trajectory.png")
-        logger.info(f"Trajectory plot: {plot_path.name}")
+        import shutil
+        shutil.copy(plot_path, POLICIES_DIR / f"{run_id}.png")
+        logger.info(f"Trajectory plot: {plot_path.name} (+ logs/policies/{run_id}.png)")
     except Exception as e:
         logger.warning(f"Trajectory plot failed: {type(e).__name__}: {e}")
     logger.info(f"[green]Winner[/green] F0.5={winner.f0_5:.3f} iter={winner.iter} → {policy_md}")
