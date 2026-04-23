@@ -275,6 +275,14 @@ def report_on_test(
     y = labels[mask]
     p = preds[mask]
     s = scores[mask]
+    if len(y) == 0:
+        return {
+            "model": model_name,
+            "n": int(len(labels)),
+            "n_valid": 0,
+            "f0_5": 0.0, "precision_ai": 0.0, "recall_ai": 0.0, "accuracy": 0.0,
+            "auroc": None, "ece": 0.0, "reliability": [],
+        }
     tp = int(((p == 1) & (y == 1)).sum())
     fp = int(((p == 1) & (y == 0)).sum())
     fn = int(((p == 0) & (y == 1)).sum())
