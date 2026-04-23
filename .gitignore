@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.DS_Store
+
+# Python build artifacts
+build/
+dist/
+
+# uv / pip caches
+.uv/
+.pip-cache/
+
+# HuggingFace cache (never commit datasets)
+.cache/
+.huggingface/
+~/.cache/huggingface/
+
+# Experiment artifacts — reproducible from config, not committed
+logs/runs/
+
+# Editor
+.idea/
+.vscode/
