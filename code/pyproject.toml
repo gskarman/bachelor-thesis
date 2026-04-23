@@ -18,6 +18,7 @@ dependencies = [
 aitd-run = "aitd.run:main"
 aitd-induce = "aitd.policy:main"
 aitd-ablate = "aitd.faithfulness:main"
+aitd-calibrate = "aitd.calibration:main"
 
 [build-system]
 requires = ["hatchling"]
