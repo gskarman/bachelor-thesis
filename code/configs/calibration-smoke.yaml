@@ -25,4 +25,4 @@ classification:
   temperature: 0.0
   max_retries: 3
   think: false
-  top_logprobs_k: 25   # higher than baselines so both Yes and No survive on 31B-scale margins
+  top_logprobs_k: 20   # higher than baselines so both Yes and No survive on 31B-scale margins

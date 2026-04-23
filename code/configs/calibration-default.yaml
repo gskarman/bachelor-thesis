@@ -1,22 +1,20 @@
 run:
-  name: "calibration-default"
-  notes: "D6 calibration over Thread B's frozen best policy — full splits from make_splits(seed=42, HC3 all)"
+  name: "calibration-e4b-n1000-policy-b15d8f"
+  notes: "D6 calibration over Thread B's frozen best policy (2026-04-23T23-06-25_b15d8f, F0.5=0.980 on n=200 train-val). E4B to match induction model. sample_size=1000 for splits that match PR #9 baseline pool (directional comparison)."
 
 model:
-  # Primary: 31B for the headline number. If 31B turns out too slow on val+test
-  # (800 calls on 60/20/20 with n=full HC3 would be large), flip this to e4b and
-  # note the swap in RUNS.md.
-  name: "gemma4:31b"
+  # E4B to match the model B's policy was tuned against. 31B run can follow as a
+  # secondary PR once this one lands (orchestrator's call).
+  name: "gemma4:e4b"
   host: "http://localhost:11434"
 
 policy:
-  # TBD — point to the winning policy file from Thread B's full n=200 induction once
-  # that PR lands (logs/policies/<run_id>.md). Until then, use calibration-smoke.yaml.
-  path: "logs/policies/TODO-B-frozen-policy.md"
+  # Thread B's full-induction winner. F0.5=0.980 on n=200 drawn from HC3 train split.
+  path: "logs/policies/2026-04-23T23-06-25_b15d8f.md"
 
 splits:
   split: "all"
-  sample_size: null   # full HC3 all
+  sample_size: 1000   # val=200 test=200 on E4B ≈ 4 min
   seed: 42
   min_chars: 32
   train: 0.60
@@ -28,4 +26,4 @@ classification:
   temperature: 0.0
   max_retries: 3
   think: false
-  top_logprobs_k: 25   # enough for both Yes and No to survive even on 31B's near-deterministic distributions
+  top_logprobs_k: 20   # enough for both Yes and No to survive even on 31B's near-deterministic distributions
