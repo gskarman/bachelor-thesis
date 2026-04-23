@@ -1,0 +1,20 @@
+run:
+  name: "31b-smoke"
+  notes: "n=10 31B parity check — confirm logprob surface + wall-clock before scaling"
+
+model:
+  name: "gemma4:31b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  sample_size: 10
+  seed: 42
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  think: false
+  return_logprobs: true
+  top_logprobs_k: 10
