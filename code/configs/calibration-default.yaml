@@ -1,0 +1,29 @@
+run:
+  name: "calibration-e4b-n1000-policy-b15d8f"
+  notes: "D6 calibration over Thread B's frozen best policy (2026-04-23T23-06-25_b15d8f, F0.5=0.980 on n=200 train-val). E4B to match induction model. sample_size=1000 for splits that match PR #9 baseline pool (directional comparison)."
+
+model:
+  # E4B to match the model B's policy was tuned against. 31B run can follow as a
+  # secondary PR once this one lands (orchestrator's call).
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+policy:
+  # Thread B's full-induction winner. F0.5=0.980 on n=200 drawn from HC3 train split.
+  path: "logs/policies/2026-04-23T23-06-25_b15d8f.md"
+
+splits:
+  split: "all"
+  sample_size: 1000   # val=200 test=200 on E4B ≈ 4 min
+  seed: 42
+  min_chars: 32
+  train: 0.60
+  val: 0.20
+  test: 0.20
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  think: false
+  top_logprobs_k: 20   # enough for both Yes and No to survive even on 31B's near-deterministic distributions

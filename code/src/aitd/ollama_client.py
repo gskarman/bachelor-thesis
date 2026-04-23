@@ -88,7 +88,8 @@ class OllamaClient:
                 kwargs["system"] = system
             if return_logprobs:
                 kwargs["logprobs"] = True
-                kwargs["top_logprobs"] = top_logprobs_k
+                # Ollama 0.21.1 caps top_logprobs at 20. Clamp silently to keep callers portable.
+                kwargs["top_logprobs"] = min(top_logprobs_k, 20)
             try:
                 resp = self.client.generate(think=think, **kwargs)
             except TypeError:
