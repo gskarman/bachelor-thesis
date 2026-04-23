@@ -1,0 +1,20 @@
+run:
+  name: "e4b-wiki_csai-n200"
+  notes: "D8 per-domain — Gemma 4 E4B, HC3 wiki_csai, n=200, return_logprobs for D9 AUROC/ECE"
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "wiki_csai"
+  sample_size: 200
+  seed: 42
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  think: false
+  return_logprobs: true
+  top_logprobs_k: 10

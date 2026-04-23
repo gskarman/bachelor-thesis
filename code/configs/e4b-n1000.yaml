@@ -1,0 +1,20 @@
+run:
+  name: "e4b-n1000-all"
+  notes: "D8 baseline — Gemma 4 E4B, HC3 all, n=1000, return_logprobs on for D6/D9"
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  sample_size: 1000
+  seed: 42
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  think: false
+  return_logprobs: true
+  top_logprobs_k: 10
