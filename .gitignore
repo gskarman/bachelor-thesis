@@ -19,6 +19,8 @@ dist/
 
 # Experiment artifacts — reproducible from config, not committed
 logs/runs/
+# Cached HC3 split index dumps — regenerable from configs/splits.yaml + aitd.data.make_splits
+logs/splits/
 
 # Editor
 .idea/

@@ -21,6 +21,26 @@ class GenerationResult:
     text: str
     tokens: int | None = None
     raw: dict[str, Any] | None = None
+    logprobs: dict[str, float] | None = None
+
+
+def _extract_first_token_top_logprobs(resp: Any) -> dict[str, float] | None:
+    lps = resp.get("logprobs") if hasattr(resp, "get") else None
+    if not lps:
+        return None
+    first = lps[0]
+    candidates = first.get("top_logprobs") if hasattr(first, "get") else getattr(first, "top_logprobs", None)
+    if not candidates:
+        return None
+    out: dict[str, float] = {}
+    for c in candidates:
+        tok = c.get("token") if hasattr(c, "get") else getattr(c, "token", None)
+        lp = c.get("logprob") if hasattr(c, "get") else getattr(c, "logprob", None)
+        if tok is None or lp is None:
+            continue
+        if tok not in out:
+            out[tok] = float(lp)
+    return out or None
 
 
 class OllamaClient:
@@ -52,6 +72,8 @@ class OllamaClient:
             temperature: float,
             think: bool,
             system: str | None,
+            return_logprobs: bool,
+            top_logprobs_k: int,
         ) -> GenerationResult:
             kwargs: dict[str, Any] = dict(
                 model=self.model,
@@ -64,6 +86,9 @@ class OllamaClient:
             )
             if system is not None:
                 kwargs["system"] = system
+            if return_logprobs:
+                kwargs["logprobs"] = True
+                kwargs["top_logprobs"] = top_logprobs_k
             try:
                 resp = self.client.generate(think=think, **kwargs)
             except TypeError:
@@ -71,7 +96,14 @@ class OllamaClient:
             text = (resp.get("response") or "").strip()
             if not text:
                 raise UnparseableResponse("Empty response from Ollama")
-            return GenerationResult(text=text, tokens=resp.get("eval_count"), raw=dict(resp))
+            raw = resp.model_dump() if hasattr(resp, "model_dump") else dict(resp)
+            logprobs = _extract_first_token_top_logprobs(raw) if return_logprobs else None
+            return GenerationResult(
+                text=text,
+                tokens=raw.get("eval_count"),
+                raw=raw,
+                logprobs=logprobs,
+            )
 
         return _call
 
@@ -82,8 +114,12 @@ class OllamaClient:
         temperature: float = 0.0,
         think: bool = False,
         system: str | None = None,
+        return_logprobs: bool = False,
+        top_logprobs_k: int = 10,
     ) -> GenerationResult:
-        return self._generate(prompt, num_predict, temperature, think, system)
+        return self._generate(
+            prompt, num_predict, temperature, think, system, return_logprobs, top_logprobs_k
+        )
 
     def health_check(self) -> bool:
         try:

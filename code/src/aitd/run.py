@@ -14,7 +14,7 @@ import yaml
 from rich.console import Console
 from rich.logging import RichHandler
 
-from .classifier import classify
+from .classifier import classify, yes_no_prob_ai
 from .data import load_hc3
 from .evaluation import evaluate
 from .insights import write_insights
@@ -47,10 +47,12 @@ def _setup_logger(run_dir: pathlib.Path) -> logging.Logger:
 
 def _append_runs_log(run_id: str, config: dict[str, Any], metrics: dict[str, Any]) -> None:
     RUNS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    auroc = metrics.get("auroc")
+    tail = f" auroc={auroc:.3f}" if auroc is not None else ""
     line = (
         f"| `{run_id}` | {config['model']['name']} | "
         f"{config['data']['split']} / n={config['data'].get('sample_size', 'all')} | "
-        f"acc={metrics['accuracy']:.3f} f1={metrics['f1']:.3f} | "
+        f"f0.5={metrics['f0_5']:.3f} f1={metrics['f1']:.3f} acc={metrics['accuracy']:.3f}{tail} | "
         f"{config.get('run', {}).get('notes', '').strip() or '—'} |\n"
     )
     with RUNS_LOG.open("a") as f:
@@ -84,9 +86,14 @@ def run_experiment(config_path: pathlib.Path) -> pathlib.Path:
     )
     logger.info(f"Loaded {len(data)} examples")
 
+    cls_cfg = config.get("classification", {})
+    return_logprobs = bool(cls_cfg.get("return_logprobs", False))
+    top_logprobs_k = int(cls_cfg.get("top_logprobs_k", 10))
+
     preds_file = run_dir / "predictions.jsonl"
     labels: list[int] = []
     preds: list[int] = []
+    probs_ai: list[float | None] = []
     start = time.time()
     with preds_file.open("w") as f:
         for i, ex in enumerate(data, 1):
@@ -94,44 +101,50 @@ def run_experiment(config_path: pathlib.Path) -> pathlib.Path:
                 pred = classify(
                     client,
                     ex.text,
-                    num_predict=config.get("classification", {}).get("num_predict", 16),
-                    temperature=config.get("classification", {}).get("temperature", 0.0),
-                    think=config.get("classification", {}).get("think", False),
+                    num_predict=cls_cfg.get("num_predict", 16),
+                    temperature=cls_cfg.get("temperature", 0.0),
+                    think=cls_cfg.get("think", False),
+                    return_logprobs=return_logprobs,
+                    top_logprobs_k=top_logprobs_k,
                 )
                 pred_label = pred.label
                 raw = pred.raw_response
+                logprobs = pred.logprobs
                 err = None
             except UnparseableResponse as e:
                 pred_label = -1
                 raw = ""
+                logprobs = None
                 err = str(e)
             except Exception as e:
                 pred_label = -1
                 raw = ""
+                logprobs = None
                 err = f"{type(e).__name__}: {e}"
                 logger.warning(f"[red]{i}/{len(data)}[/red] {err}")
 
             labels.append(ex.label)
             preds.append(pred_label)
-            f.write(
-                json.dumps(
-                    {
-                        "idx": i - 1,
-                        "label": ex.label,
-                        "pred": pred_label,
-                        "source": ex.source,
-                        "text": ex.text,
-                        "raw": raw,
-                        "error": err,
-                    },
-                    ensure_ascii=False,
-                )
-                + "\n"
-            )
+            probs_ai.append(yes_no_prob_ai(logprobs) if logprobs else None)
+            row = {
+                "idx": i - 1,
+                "label": ex.label,
+                "pred": pred_label,
+                "source": ex.source,
+                "text": ex.text,
+                "raw": raw,
+                "error": err,
+            }
+            if logprobs is not None:
+                row["logprobs"] = logprobs
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
             if i % 25 == 0 or i == len(data):
                 logger.info(f"  {i}/{len(data)} done ({(time.time() - start):.1f}s)")
 
-    metrics = evaluate(labels, preds)
+    probs_for_eval: list[float] | None = None
+    if any(p is not None for p in probs_ai):
+        probs_for_eval = [p if p is not None else 0.5 for p in probs_ai]
+    metrics = evaluate(labels, preds, probs=probs_for_eval)
     metrics_dict = metrics.as_dict()
     (run_dir / "metrics.json").write_text(json.dumps(metrics_dict, indent=2))
     logger.info(f"[green]Metrics[/green] {metrics_dict}")

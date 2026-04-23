@@ -12,7 +12,9 @@ data:
   seed: 42
 
 classification:
-  num_predict: 16
+  num_predict: 1
   temperature: 0.0
   max_retries: 3
   think: false
+  return_logprobs: true
+  top_logprobs_k: 10
