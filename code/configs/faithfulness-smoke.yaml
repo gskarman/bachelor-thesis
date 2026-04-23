@@ -1,0 +1,20 @@
+run:
+  name: "faithfulness-smoke"
+  notes: "Thread B smoke: 3-policy ablation on n=10 to validate harness. Uses smoke-run winner policy as 'best'; full n=100 test-split ablation is a separate config."
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  sample_size: 10
+  seed: 7
+
+faithfulness:
+  best_policy: "2026-04-23T21-10-04_6bedd0"  # resolves to logs/policies/<id>.md
+
+classification:
+  num_predict: 16
+  temperature: 0.0
+  max_retries: 3
