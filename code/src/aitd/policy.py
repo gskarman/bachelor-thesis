@@ -12,8 +12,9 @@ import yaml
 from rich.console import Console
 
 from .classifier import classify
-from .data import LABEL_AI, LABEL_HUMAN, Example, load_hc3
+from .data import LABEL_AI, LABEL_HUMAN, Example, load_hc3, make_splits, splits_sha256
 from .ollama_client import OllamaClient, UnparseableResponse
+from .plots import plot_trajectory
 from .run import RUNS_DIR, RUNS_LOG, _mint_run_id, _setup_logger
 
 POLICIES_DIR = pathlib.Path(__file__).resolve().parents[3] / "logs" / "policies"
@@ -165,13 +166,22 @@ def run_induction(config_path: pathlib.Path) -> pathlib.Path:
     client = OllamaClient(model=config["model"]["name"], host=config["model"].get("host", "http://localhost:11434"), max_attempts=config.get("classification", {}).get("max_retries", 3))
     if not client.health_check():
         logger.error("Ollama not reachable."); sys.exit(2)
-    data = load_hc3(split=config["data"]["split"], sample_size=config["data"].get("sample_size"), seed=config["data"].get("seed", 42))
+    all_ex = load_hc3(split=config["data"]["split"], sample_size=None, seed=config["data"].get("seed", 42), min_chars=config["data"].get("min_chars", 32))
+    sp = config.get("splits", {})
+    splits = make_splits(all_ex, train=sp.get("train", 0.60), val=sp.get("val", 0.20), test=sp.get("test", 0.20), seed=sp.get("seed", 42))
+    splits_hash = splits_sha256(splits)
+    logger.info(f"splits sha256={splits_hash[:12]}... | train={len(splits['train'])} val={len(splits['val'])} test={len(splits['test'])}")
+    train_pool = [all_ex[i] for i in splits["train"]]
+    humans = [e for e in train_pool if e.label == LABEL_HUMAN]
+    ais = [e for e in train_pool if e.label == LABEL_AI]
     pool = config["seed"]["pool_size"]
-    humans = [e for e in data if e.label == LABEL_HUMAN]
-    ais = [e for e in data if e.label == LABEL_AI]
-    half = pool // 2
-    seed_ex = humans[:half] + ais[: pool - half]
-    val_ex = humans[half:] + ais[pool - half:]
+    s_half = pool // 2
+    seed_ex = humans[:s_half] + ais[: pool - s_half]
+    n_val = config["induction"].get("scoring_sample", 200)
+    v_half = n_val // 2
+    val_ex = humans[s_half : s_half + v_half] + ais[pool - s_half : pool - s_half + (n_val - v_half)]
+    if len(val_ex) < n_val:
+        logger.warning(f"val_ex shorter than requested ({len(val_ex)} < {n_val}); train pool exhausted")
     logger.info(f"seed={len(seed_ex)} val={len(val_ex)}")
     ind = config.get("induction", {})
     traj = induce(client, seed_ex, val_ex, max_iters=ind.get("max_iters", 30), plateau_threshold=ind.get("plateau_threshold", 0.005), plateau_window=ind.get("plateau_window", 3), misclassified_k=ind.get("misclassified_k", 20), logger=logger)
@@ -179,7 +189,7 @@ def run_induction(config_path: pathlib.Path) -> pathlib.Path:
         for step in traj:
             f.write(json.dumps(asdict(step), ensure_ascii=False) + "\n")
     winner = max(traj, key=lambda s: s.f0_5)
-    metrics = {"winner_iter": winner.iter, "f0_5": winner.f0_5, "precision_ai": winner.precision_ai, "recall_ai": winner.recall_ai, "iters_run": len(traj), "accepted_count": sum(1 for s in traj if s.accepted)}
+    metrics = {"winner_iter": winner.iter, "f0_5": winner.f0_5, "precision_ai": winner.precision_ai, "recall_ai": winner.recall_ai, "iters_run": len(traj), "accepted_count": sum(1 for s in traj if s.accepted), "splits_sha256": splits_hash, "n_seed": len(seed_ex), "n_val": len(val_ex)}
     (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2))
     POLICIES_DIR.mkdir(parents=True, exist_ok=True)
     policy_md = POLICIES_DIR / f"{run_id}.md"
@@ -192,6 +202,11 @@ def run_induction(config_path: pathlib.Path) -> pathlib.Path:
     RUNS_LOG.parent.mkdir(parents=True, exist_ok=True)
     with RUNS_LOG.open("a") as f:
         f.write(f"| `{run_id}` | {config['model']['name']} | induction / iters={metrics['iters_run']} | F0.5={winner.f0_5:.3f} P={winner.precision_ai:.3f} R={winner.recall_ai:.3f} | {config.get('run', {}).get('notes', '').strip() or 'policy induction'} |\n")
+    try:
+        plot_path = plot_trajectory(run_dir / "trajectory.jsonl", run_dir / "trajectory.png")
+        logger.info(f"Trajectory plot: {plot_path.name}")
+    except Exception as e:
+        logger.warning(f"Trajectory plot failed: {type(e).__name__}: {e}")
     logger.info(f"[green]Winner[/green] F0.5={winner.f0_5:.3f} iter={winner.iter} → {policy_md}")
     return run_dir
 
