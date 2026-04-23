@@ -20,7 +20,7 @@ splits:
   seed: 42
 
 faithfulness:
-  best_policy: "REPLACE_WITH_WINNER_ID"   # populated by PR B; resolves to logs/policies/<id>.md
+  best_policy: "2026-04-23T23-06-25_b15d8f"   # PR B winner, F0.5=0.980 on n=200 train-val
 
 classification:
   num_predict: 1

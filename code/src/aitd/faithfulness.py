@@ -15,7 +15,7 @@ from rich.console import Console
 from .classifier import classify
 from .data import LABEL_AI, LABEL_HUMAN, Example, load_hc3, make_splits, splits_sha256
 from .ollama_client import OllamaClient, UnparseableResponse
-from .run import RUNS_DIR, _mint_run_id, _setup_logger
+from .run import RUNS_DIR, RUNS_LOG, _mint_run_id, _setup_logger
 
 POLICIES_DIR = pathlib.Path(__file__).resolve().parents[3] / "logs" / "policies"
 _POLICY_MD_SECTION = re.compile(r"##\s*Policy text\s*\n+(.*)", re.DOTALL)
@@ -198,7 +198,19 @@ def run_ablation(config_path: pathlib.Path) -> pathlib.Path:
     (run_dir / "faithfulness.json").write_text(json.dumps(payload, indent=2))
     md_path = run_dir / "faithfulness.md"
     md_path.write_text(_render_markdown(report, run_id, config))
-    logger.info(f"[green]Ablation[/green] → {md_path}")
+    POLICIES_DIR.mkdir(parents=True, exist_ok=True)
+    tracked_md = POLICIES_DIR / f"{best_src}-faithfulness.md"
+    import shutil
+    shutil.copy(md_path, tracked_md)
+    best_f05 = report.per_policy_f0_5.get("best", 0.0)
+    inv_f05 = report.per_policy_f0_5.get("inverted", 0.0)
+    bvi = report.pairwise.get("best_vs_inverted")
+    bvi_rate = bvi.label_change_rate if bvi else 0.0
+    bvi_dlp = f"Δlp={bvi.mean_delta_logprob:+.2f}" if (bvi and bvi.mean_delta_logprob is not None) else "Δlp=n/a"
+    RUNS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with RUNS_LOG.open("a") as f:
+        f.write(f"| `{run_id}` | {config['model']['name']} | faithfulness / n={report.examples_n} ({source}) | best_F0.5={best_f05:.3f} inv_F0.5={inv_f05:.3f} Δlabel(best_vs_inv)={bvi_rate:.3f} {bvi_dlp} | {config.get('run', {}).get('notes', '').strip() or 'faithfulness ablation'} |\n")
+    logger.info(f"[green]Ablation[/green] → {md_path} (+ logs/policies/{tracked_md.name})")
     return run_dir
 
 def main() -> None:
