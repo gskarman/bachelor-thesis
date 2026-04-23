@@ -78,6 +78,9 @@ def classify(
     system_prompt: str | None = None,
     return_logprobs: bool = False,
     top_logprobs_k: int = 10,
+    keep_alive: str | int | None = "1h",
+    num_ctx: int | None = None,
+    num_batch: int | None = None,
 ) -> Prediction:
     prompt = build_prompt(text)
     result = client.generate(
@@ -88,6 +91,9 @@ def classify(
         system=system_prompt,
         return_logprobs=return_logprobs,
         top_logprobs_k=top_logprobs_k,
+        keep_alive=keep_alive,
+        num_ctx=num_ctx,
+        num_batch=num_batch,
     )
     label = parse_yes_no(result.text)
     return Prediction(label=label, raw_response=result.text, logprobs=result.logprobs)
