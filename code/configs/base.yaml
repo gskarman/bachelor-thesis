@@ -1,0 +1,20 @@
+run:
+  name: "first-draft"
+  notes: "v1 yes/no classifier via Ollama (Gemma 4 E4B) on HC3 subset"
+
+model:
+  # Default: Gemma 4 E4B (edge variant, ~4B effective params — fast iteration).
+  # Alt: "gemma4:31b" — 31B Dense, smartest Gemma 4. Use once the pipeline is validated.
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  sample_size: 100
+  seed: 42
+
+classification:
+  num_predict: 16
+  temperature: 0.0
+  max_retries: 3
+  think: false  # Gemma 4 is a thinking model — disable for single-token classification

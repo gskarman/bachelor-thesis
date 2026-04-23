@@ -1,0 +1,18 @@
+run:
+  name: "smoke-test"
+  notes: "n=10 smoke test to validate end-to-end pipeline before real runs"
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  sample_size: 10
+  seed: 42
+
+classification:
+  num_predict: 16
+  temperature: 0.0
+  max_retries: 3
+  think: false
