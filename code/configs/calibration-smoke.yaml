@@ -1,0 +1,28 @@
+run:
+  name: "calibration-smoke"
+  notes: "D6 calibration smoke — stand-in policy from Thread B's n=20 smoke; tiny splits to verify the pipeline end-to-end without contending with B's full induction"
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+policy:
+  # Stand-in: Thread B's n=20-val smoke winner. Real calibration replaces this with
+  # the frozen winner of B's full n=200 induction once that PR lands.
+  path: "logs/policies/2026-04-23T21-10-04_6bedd0.md"
+
+splits:
+  split: "all"
+  sample_size: 200   # small total; balanced 60/20/20 → val=40 test=40
+  seed: 42
+  min_chars: 32
+  train: 0.60
+  val: 0.20
+  test: 0.20
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  think: false
+  top_logprobs_k: 25   # higher than baselines so both Yes and No survive on 31B-scale margins
