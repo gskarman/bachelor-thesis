@@ -20,3 +20,4 @@ Artifacts for each `run_id` live under `logs/runs/<run_id>/` (gitignored — reg
 | `2026-04-19T15-23-31_2dc781` | gemma4:e4b | all / n=10 | acc=0.900 f1=0.909 | n=10 smoke test to validate end-to-end pipeline before real runs |
 | `2026-04-19T15-25-26_50dd11` | gemma4:e4b | all / n=100 | acc=0.910 f1=0.917 | v1 yes/no classifier via Ollama (Gemma 4 E4B) on HC3 subset |
 | `2026-04-19T15-41-39_50dd11` | gemma4:e4b | all / n=100 | acc=0.910 f1=0.917 | v1 yes/no classifier via Ollama (Gemma 4 E4B) on HC3 subset |
+| `2026-04-23T21-10-04_6bedd0` | gemma4:e4b | induction / iters=6 | F0.5=0.978 P=1.000 R=0.900 | Thread B smoke: 5 iters, 10 seed + 20 val — validate policy-induction loop mechanics |
