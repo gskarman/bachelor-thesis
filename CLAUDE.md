@@ -22,7 +22,8 @@ bachelor-thesis/
 │       └── run.py              # CLI entry
 ├── docs/
 │   ├── operating-brief.md      # course, deadlines, Canvas/Notion/Drive links
-│   └── outline.md              # thesis outline
+│   ├── decisions.md            # method & design ADRs — authoritative; read before proposing method changes
+│   └── outline.md              # thesis report structure
 ├── logs/
 │   ├── RUNS.md                 # append-only changelog of every run
 │   └── runs/<run_id>/          # gitignored per-run artifacts
@@ -107,7 +108,8 @@ Every run:
 | Per-example predictions of a run | `logs/runs/<run_id>/predictions.jsonl` (auto) |
 | One-line summary of a run | `logs/RUNS.md` (auto row + optional manual note) |
 | Why I chose config X | commit message referencing the run_id |
-| Method / design decisions at the thesis level | `docs/outline.md` |
+| Method / design / architecture decisions (ADR-style) | `docs/decisions.md` |
+| Thesis report structure (Intro, Background, …) | `docs/outline.md` |
 | Course / deadline facts | `docs/operating-brief.md` |
 
 ---
@@ -124,9 +126,7 @@ Every run:
 
 ## 8. Open questions / TODOs
 
-- **Logprob extraction.** v1 parses the yes/no string. Ollama exposes logprobs on recent builds — plan to upgrade once v1 runs end-to-end, so we can report calibrated probabilities + AUROC + ECE instead of just accuracy/F1.
-- **Policy induction for explanations** (RQ2). Not started. Will need a separate module (`aitd/explanations.py`) once the classifier is stable.
-- **Baselines.** DetectGPT + fine-tuned RoBERTa wrappers live in a separate repo or module — decide where before Inlämning 5 Results section (deadline 2026-04-30).
+Authoritative tracker: `docs/decisions.md` (§ Open questions + each ADR's own open issues).
 
 ---
 
