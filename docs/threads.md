@@ -7,6 +7,22 @@ Two Claude Code sessions work in parallel on the 7-day run to Inlämning 5 (2026
 
 Authoritative method reference: **`docs/decisions.md`**. Do not modify without surfacing to the other thread via the `#thesis-design` channel.
 
+## Working directories (git worktrees)
+
+Each thread runs in its **own isolated git worktree** so they never share `HEAD` or a working tree. The main repo CWD is neutral space and is not used for active work by any thread.
+
+| Path | Branch | Owner |
+|---|---|---|
+| `/Users/skarman/Documents/github/bachelor-thesis` | `main` | orchestrator only (PR reviews, merges, coordination) |
+| `/Users/skarman/Documents/github/bachelor-thesis-a` | `thread-a/day1-baselines` (and later `thread-a/*`) | Thread A |
+| `/Users/skarman/Documents/github/bachelor-thesis-b` | `thread-b/policy-scaffold` (and later `thread-b/*`) | Thread B |
+
+- Every worktree shares git history with the main repo — `git push` from any worktree goes to the same `origin`.
+- Each worktree gets its **own Python venv**: run `uv venv && uv pip install -e .` inside the worktree after first checkout. Ollama models are machine-global and do not need to be duplicated.
+- Run-artifacts under `logs/runs/<run_id>/` are gitignored and stay inside the worktree they were generated in. Committed artifacts (RUNS.md rows, `logs/policies/<id>.md`) go through normal PRs.
+- **Do not `cd` into the main repo dir from inside a thread.** That breaks isolation.
+- Adding a new thread worktree: `git worktree add -b thread-X/<slug> /Users/skarman/Documents/github/bachelor-thesis-X main` (from inside the main repo). `git worktree list` shows the current state.
+
 ---
 
 ## Shared invariants
