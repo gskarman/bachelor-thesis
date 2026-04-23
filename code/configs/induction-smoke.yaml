@@ -1,0 +1,26 @@
+run:
+  name: "induction-smoke"
+  notes: "Thread B smoke: 5 iters, 10 seed + 20 val — validate policy-induction loop mechanics"
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  sample_size: 30
+  seed: 42
+
+seed:
+  pool_size: 10
+
+induction:
+  max_iters: 5
+  plateau_threshold: 0.005
+  plateau_window: 3
+  misclassified_k: 10
+
+classification:
+  num_predict: 16
+  temperature: 0.0
+  max_retries: 3

@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 aitd-run = "aitd.run:main"
+aitd-induce = "aitd.policy:main"
 
 [build-system]
 requires = ["hatchling"]

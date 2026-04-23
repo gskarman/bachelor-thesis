@@ -46,8 +46,14 @@ class OllamaClient:
             retry=retry_if_exception_type((UnparseableResponse, ConnectionError, TimeoutError)),
             reraise=True,
         )
-        def _call(prompt: str, num_predict: int, temperature: float, think: bool) -> GenerationResult:
-            kwargs = dict(
+        def _call(
+            prompt: str,
+            num_predict: int,
+            temperature: float,
+            think: bool,
+            system: str | None,
+        ) -> GenerationResult:
+            kwargs: dict[str, Any] = dict(
                 model=self.model,
                 prompt=prompt,
                 options={
@@ -56,6 +62,8 @@ class OllamaClient:
                 },
                 stream=False,
             )
+            if system is not None:
+                kwargs["system"] = system
             try:
                 resp = self.client.generate(think=think, **kwargs)
             except TypeError:
@@ -73,8 +81,9 @@ class OllamaClient:
         num_predict: int = 16,
         temperature: float = 0.0,
         think: bool = False,
+        system: str | None = None,
     ) -> GenerationResult:
-        return self._generate(prompt, num_predict, temperature, think)
+        return self._generate(prompt, num_predict, temperature, think, system)
 
     def health_check(self) -> bool:
         try:

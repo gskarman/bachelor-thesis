@@ -22,6 +22,7 @@ class Prediction:
     label: int
     raw_response: str
     prompt_version: str = "v1"
+    logprobs: dict[str, float] | None = None
 
 
 def build_prompt(text: str) -> str:
@@ -43,8 +44,18 @@ def classify(
     num_predict: int = 16,
     temperature: float = 0.0,
     think: bool = False,
+    system_prompt: str | None = None,
+    return_logprobs: bool = False,
 ) -> Prediction:
+    if return_logprobs:
+        raise NotImplementedError("Thread A: logprob extraction path not yet wired up")
     prompt = build_prompt(text)
-    result = client.generate(prompt, num_predict=num_predict, temperature=temperature, think=think)
+    result = client.generate(
+        prompt,
+        num_predict=num_predict,
+        temperature=temperature,
+        think=think,
+        system=system_prompt,
+    )
     label = parse_yes_no(result.text)
     return Prediction(label=label, raw_response=result.text)
