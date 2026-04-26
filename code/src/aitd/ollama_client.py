@@ -74,16 +74,26 @@ class OllamaClient:
             system: str | None,
             return_logprobs: bool,
             top_logprobs_k: int,
+            keep_alive: str | int | None,
+            num_ctx: int | None,
+            num_batch: int | None,
         ) -> GenerationResult:
+            options: dict[str, Any] = {
+                "num_predict": num_predict,
+                "temperature": temperature,
+            }
+            if num_ctx is not None:
+                options["num_ctx"] = num_ctx
+            if num_batch is not None:
+                options["num_batch"] = num_batch
             kwargs: dict[str, Any] = dict(
                 model=self.model,
                 prompt=prompt,
-                options={
-                    "num_predict": num_predict,
-                    "temperature": temperature,
-                },
+                options=options,
                 stream=False,
             )
+            if keep_alive is not None:
+                kwargs["keep_alive"] = keep_alive
             if system is not None:
                 kwargs["system"] = system
             if return_logprobs:
@@ -117,9 +127,21 @@ class OllamaClient:
         system: str | None = None,
         return_logprobs: bool = False,
         top_logprobs_k: int = 10,
+        keep_alive: str | int | None = "1h",
+        num_ctx: int | None = None,
+        num_batch: int | None = None,
     ) -> GenerationResult:
         return self._generate(
-            prompt, num_predict, temperature, think, system, return_logprobs, top_logprobs_k
+            prompt,
+            num_predict,
+            temperature,
+            think,
+            system,
+            return_logprobs,
+            top_logprobs_k,
+            keep_alive,
+            num_ctx,
+            num_batch,
         )
 
     def health_check(self) -> bool:
