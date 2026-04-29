@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
 import ollama
 from tenacity import (
     retry,
@@ -51,19 +52,30 @@ class OllamaClient:
         max_attempts: int = 3,
         wait_min: float = 1.0,
         wait_max: float = 10.0,
+        timeout: float = 120.0,
     ):
         self.model = model
-        self.client = ollama.Client(host=host)
+        self.client = ollama.Client(host=host, timeout=timeout)
         self.max_attempts = max_attempts
         self._wait_min = wait_min
         self._wait_max = wait_max
+        self._timeout = timeout
         self._generate = self._build_generate()
 
     def _build_generate(self):
         @retry(
             stop=stop_after_attempt(self.max_attempts),
             wait=wait_exponential(multiplier=1, min=self._wait_min, max=self._wait_max),
-            retry=retry_if_exception_type((UnparseableResponse, ConnectionError, TimeoutError)),
+            retry=retry_if_exception_type((
+                UnparseableResponse,
+                ConnectionError,
+                TimeoutError,
+                httpx.TimeoutException,
+                httpx.ReadTimeout,
+                httpx.ConnectTimeout,
+                httpx.ReadError,
+                httpx.RemoteProtocolError,
+            )),
             reraise=True,
         )
         def _call(
@@ -83,6 +95,7 @@ class OllamaClient:
                     "temperature": temperature,
                 },
                 stream=False,
+                keep_alive="4h",
             )
             if system is not None:
                 kwargs["system"] = system
