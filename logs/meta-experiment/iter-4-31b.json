@@ -1,0 +1,161 @@
+{
+  "draft": "docs/inl5-draft-v2.md",
+  "label": "iter-4-31b",
+  "policy": "logs/policies/2026-04-23T23-06-25_b15d8f.md",
+  "model": "gemma4:31b",
+  "results": [
+    {
+      "parent": "1. Introduction (~1 page)",
+      "heading": "1. Introduction (~1 page)",
+      "words": 471,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.1 LLMs and token probabilities *(Theory)*",
+      "words": 359,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.2 Related work in AI-text detection",
+      "words": 117,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0010705858625226048,
+      "margin_nats": -6.8384780859341845
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.3 Faithfulness of LLM explanations *(new \u2014 needed for RQ2)*",
+      "words": 89,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.4 Purpose and research questions",
+      "words": 229,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.1 Data",
+      "words": 29,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.2 Two-phase classifier *(D1, D2, D3)*",
+      "words": 286,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.3 Three-class output *(D5)*",
+      "words": 166,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.4 Faithfulness evaluation *(D7)*",
+      "words": 182,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.5 Models and baselines *(D8, D10)*",
+      "words": 112,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.1 Summary",
+      "words": 283,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.2 Relation to prior work",
+      "words": 161,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.3 Method discussion",
+      "words": 330,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.4 Threats to faithfulness \u2014 pre-empting Madsen et al.",
+      "words": 174,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.5 Future work",
+      "words": 146,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 3.1253119142241016e-08,
+      "margin_nats": -17.28114662194011
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.6 Contribution",
+      "words": 143,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    },
+    {
+      "parent": "6. Conclusion *(\u2264300 words)*",
+      "heading": "6. Conclusion *(\u2264300 words)*",
+      "words": 340,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0,
+      "margin_nats": null
+    }
+  ]
+}
