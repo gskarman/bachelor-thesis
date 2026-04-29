@@ -150,6 +150,54 @@ If all local paths fail for Gemma 4 specifically, fall back to the two-call tric
 
 ---
 
+## 2026-04-26 — pipeline scale-up + harness resilience
+
+**Context.** The 2026-04-23 v1 method froze with all evaluation slices at small n: induction at scoring=200, calibration at val=200 / test=200, faithfulness ablation at n=100. With ~30 hours left to Inl. 5 and the ML pipeline genuinely stable, the right move is to re-run the same pipeline at much larger n on the small (E4B) classifier — both for tighter confidence intervals on the headline numbers and to surface any small-sample artefacts in the original draft. HC3 `all` after the `min_chars=32` filter has 85,346 examples (58K human / 27K AI); the prior runs were touching 0.2–1.2% of that.
+
+---
+
+### D12. Scaled re-run on E4B with the same architecture
+
+- **Induction (training).** Re-induce with `pool_size=30` (was 20), `scoring_sample=500` (was 200), `misclassified_k=25` (was 20), same plateau early-stop (`Δ<0.005×3`, max 30 iters). Run id `2026-04-26T17-42-47_3d67db`. Winner at iter 1, F0.5 = 0.956 on n = 500 val. Lower than the prior n = 200 winner's 0.980 by 0.024 — an honest small-sample-bias correction, not a regression.
+- **Calibration.** `sample_size=20000` balanced → val = 4000, test = 4000 (was val = 200 / test = 200). Run id `2026-04-26T19-07-51_137899`. T2 logistic chosen on val. Test F0.5 = 0.934, AUROC = 0.982, ECE = 0.013. The 95% CI on F0.5 is roughly ±0.005 vs ±0.025 at n = 200 — five times tighter.
+- **Faithfulness ablation.** `sample_size=300` (was 100), 3 policies × 300 = 900 classifications. Run id `2026-04-26T20-02-02_599091`. Best policy is the new induction-large winner.
+
+**Why E4B-only and not 31B at scale.** Per Gustav's directive ("let's do mainly the small model"). The 31B default-prompt baseline at n = 1000 (F0.5 = 0.977, AUROC ≈ 1.000, from 2026-04-23) remains the strongest detector benchmarked in this work; scaling its calibration to n = 4000 is deferred past Inl. 5 because (a) wall-clock is ~5× longer, (b) the comparison story is already telling enough in §4.1, and (c) the policy-induction half of the thesis is what benefits most from large-n test estimates.
+
+**Applicable files.**
+
+- `code/configs/induction-large.yaml`, `calibration-large.yaml`, `faithfulness-large.yaml` — frozen new configs.
+- `logs/policies/2026-04-26T17-42-47_3d67db.md` — new winner policy.
+- `logs/runs/2026-04-26T17-42-47_3d67db/`, `2026-04-26T19-07-51_137899/`, `2026-04-26T20-02-02_599091/` — run artefacts.
+- `docs/inl5-draft-v2.md` §4.1, §4.2, §4.3 — updated to reference the new policy and numbers.
+
+---
+
+### D13. Harness resilience: keep_alive, request timeout, incremental writes, resume
+
+**Context.** The first attempt at calibration-large stalled silently at 3150/4000 val classifications. Diagnosis: Ollama swapped Gemma 4 E4B out of VRAM mid-run (default `keep_alive=5min`) when something else briefly loaded gemma4:31b; the python process had no request timeout, so the in-flight call hung indefinitely; calibration also batched its JSONL writes to the end, so killing+restarting from zero would have lost 22 minutes. The pipeline was correct on a clean run but brittle to any Ollama hiccup, which is exactly the regime longer runs spend more time in.
+
+**Decision.** Three changes pinned at the harness level (no architectural changes to the method):
+
+1. **`OllamaClient` pins `keep_alive="4h"` on every request** — Ollama keeps the model resident for the duration of a thesis run, regardless of cross-talk from any other consumer.
+2. **`OllamaClient` passes `timeout=120.0` to the underlying `httpx` client and treats `httpx.TimeoutException`, `ReadError`, `ConnectTimeout`, `RemoteProtocolError` as retryable** — any single request that hangs more than two minutes raises and tenacity retries (exponential backoff, max 3 attempts).
+3. **`extract_features` writes each `FeatureRow` to `features_val.jsonl` / `features_test.jsonl` with an immediate flush, and on startup reads any existing rows and skips their indices** — a killed or crashed run loses at most one row, and `aitd-calibrate --resume <run_id>` reuses the existing run_dir + config + partial JSONLs to pick up exactly where it left off.
+
+The progress lines now also include rate (rows/sec) and ETA in minutes — easier to spot a stall as it begins, instead of after 16 minutes of silence.
+
+**Consequences.**
+
+- The same `calibration-large` run that stalled on the first attempt finished cleanly in 47 min on the second (4× faster than the original 3.3h estimate, because E4B stayed warm and the rate held at 2.8 examples/sec).
+- The harness now survives any Ollama-side hiccup short of a full crash. A full crash still loses the in-flight row but resume picks up the rest.
+- The same OllamaClient is used by `aitd-run` and `aitd-ablate` — they get the keep_alive + timeout for free. Adding incremental-write/resume to those is a one-paragraph follow-up if it ever matters for a long run.
+
+**Applicable files.**
+
+- `code/src/aitd/ollama_client.py` — `keep_alive`, `timeout`, retry exception set.
+- `code/src/aitd/calibration.py` — `extract_features` with `out_path` / resume; `--resume <run_id>` CLI flag.
+
+---
+
 ## Open questions
 
 - **Q9 — Operating-point presentation.** Curve + highlighted point vs. single-point narrative. Default to both; revisit with supervisor feedback.

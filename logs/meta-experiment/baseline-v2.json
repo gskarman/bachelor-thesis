@@ -1,0 +1,161 @@
+{
+  "draft": "docs/inl5-draft-v2.md",
+  "label": "baseline-v2",
+  "policy": "logs/policies/2026-04-23T23-06-25_b15d8f.md",
+  "model": "gemma4:e4b",
+  "results": [
+    {
+      "parent": "1. Introduction (~1 page)",
+      "heading": "1. Introduction (~1 page)",
+      "words": 372,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.7681979952237744,
+      "margin_nats": 1.19816392660141
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.1 LLMs and token probabilities *(Theory)*",
+      "words": 249,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.7601057445021483,
+      "margin_nats": 1.1532593369483948
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.2 Related work in AI-text detection",
+      "words": 117,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.1216655617698731,
+      "margin_nats": -1.976751446723938
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.3 Faithfulness of LLM explanations *(new \u2014 needed for RQ2)*",
+      "words": 89,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.19099854648017403,
+      "margin_nats": -1.4435348957777023
+    },
+    {
+      "parent": "2. Background (~1\u20131.5 pages)",
+      "heading": "2.4 Purpose and research questions",
+      "words": 56,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.9994201030098355,
+      "margin_nats": 7.4520800081663765
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.1 Data",
+      "words": 29,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.4787273153417317,
+      "margin_nats": -0.08514213562011719
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.2 Two-phase classifier *(D1, D2, D3)*",
+      "words": 128,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.9988995738642277,
+      "margin_nats": 6.810956745990552
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.3 Three-class output *(D5)*",
+      "words": 40,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.9994815003531932,
+      "margin_nats": 7.564052577363327
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.4 Faithfulness evaluation *(D7)*",
+      "words": 62,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.9213505766933613,
+      "margin_nats": 2.4608403146266937
+    },
+    {
+      "parent": "3. Method (~0.5 page)",
+      "heading": "3.5 Models and baselines *(D8, D10)*",
+      "words": 42,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.9805678608215607,
+      "margin_nats": 3.921203499659896
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.1 Summary",
+      "words": 189,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.9854659339234674,
+      "margin_nats": 4.216619280166924
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.2 Relation to prior work",
+      "words": 161,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0019015478786204535,
+      "margin_nats": -6.2631836934015155
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.3 Method discussion",
+      "words": 330,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.0022248494294130625,
+      "margin_nats": -6.1058387097436935
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.4 Threats to faithfulness \u2014 pre-empting Madsen et al.",
+      "words": 174,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.030007816449123002,
+      "margin_nats": -3.475830117240548
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.5 Future work",
+      "words": 146,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.03410683330438727,
+      "margin_nats": -3.3435554802417755
+    },
+    {
+      "parent": "5. Discussion (~2 pages)",
+      "heading": "5.6 Contribution",
+      "words": 143,
+      "raw": "No",
+      "label": "human",
+      "p_ai": 0.002330011394363653,
+      "margin_nats": -6.059549391036853
+    },
+    {
+      "parent": "6. Conclusion *(\u2264300 words)*",
+      "heading": "6. Conclusion *(\u2264300 words)*",
+      "words": 254,
+      "raw": "Yes",
+      "label": "AI",
+      "p_ai": 0.8090465300864874,
+      "margin_nats": 1.4438266456127167
+    }
+  ]
+}

@@ -70,7 +70,7 @@ Hard spec from the course. Every submission (Inl. 5, 6, 7) should follow this st
 
 ### Formalia (must always apply)
 
-- **Length:** 10–12 pages, ACM template.
+- **Length:** Kexjobbsramar states 10–12 pages in the ACM template. Course-responsible Henrik clarified in a Canvas announcement (20 Feb 2026, "Längd på uppsatsen/rapporten") that the practical target is **~10,000 words ≈ ~20 pages in the new ACM template** (KEX-mall, referenssystem & annat bra material). Treat ~10k words as the working target; the 10–12-page line refers to an older template. When in doubt, ask supervisor.
 - **References:** ~10–15 peer-reviewed research articles (journals/conferences). Web pages and textbooks only as exceptions.
 - **Language:** Swedish or English. Abstracts in BOTH.
 - **Plagiarism:** Plagiarism check runs on every submission. See Plagiathandboken. Violations go to disciplinnämnden.
@@ -199,7 +199,7 @@ Task schema (for agents adding or updating tasks):
 - Window to draft: 12 days.
 
 **Draft acceptance criteria (what "ready to submit" looks like).**
-- [ ] 10–12 pages in ACM template
+- [ ] ~10,000 words / ~20 pages in the new ACM template (per Henrik's 20 Feb 2026 announcement; Kexjobbsramar's "10–12 pages" assumes the older template)
 - [ ] Abstract in SV and EN, each ~300 words
 - [ ] Introduction (1 page) with clear problem statement
 - [ ] Background with ≥10 peer-reviewed references cited
@@ -240,3 +240,6 @@ For agents running on this file:
 ## 12. Change log
 
 - 2026-04-18 — Initial brief compiled from Canvas (course, announcements, modules), Notion (project + tasks DB), and Drive KEXET folder audit.
+- 2026-04-27 — Scheduled Canvas check (canvas-check task). No new standard-track announcements since 2026-04-18. Latest post is project-track-only (17 Apr, "Uppdaterad titel/beskrivning samt plats", may be ignored). Updated §5 and §10 to reflect Henrik's length clarification (~10k words / ~20 pages in new template). Surfaced two upcoming library lunch webinars relevant to the May/June presentations: 2026-05-05 12:15 "Retorik och presentationsteknik" and 2026-05-07 12:15 "Kommunicera dina resultat med Powerpoint och posters" (Zoom, no signup).
+- 2026-04-28 — Scheduled Canvas check. Nothing new since 2026-04-27. Inlämning 5 still due Thu 2026-04-30 19:00 (in 2 days) — assignment page, modules, and announcements list all verified unchanged. Latest standard-track announcement remains the 2026-03-06 library workshops post; only post since is project-track-only (17 Apr, ignorable).
+- 2026-04-29 — Scheduled Canvas check FAILED to read content: canvas.kth.se redirected to KTH ADFS sign-in (browser session expired). No new info captured. Notion not updated. **Action for Gustav:** sign into Canvas in the controlled Chrome instance so tomorrow's check (and the next manual one before tomorrow's 19:00 Inl. 5 deadline) can proceed. Inlämning 5 deadline unchanged per local context: Thu 2026-04-30 19:00 (~25h away).

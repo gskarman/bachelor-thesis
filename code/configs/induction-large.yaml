@@ -1,0 +1,33 @@
+run:
+  name: "induction-large"
+  notes: "Solidified pipeline run — 2.5x scoring sample (500 vs 200), 1.5x seed pool (30 vs 20), same E4B + plateau early-stop. Goal: a more robust frozen policy than the n=200 winner from PR #13."
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  seed: 42
+  min_chars: 32
+
+splits:
+  train: 0.60
+  val: 0.20
+  test: 0.20
+  seed: 42
+
+seed:
+  pool_size: 30
+
+induction:
+  max_iters: 30
+  plateau_threshold: 0.005
+  plateau_window: 3
+  misclassified_k: 25
+  scoring_sample: 500
+
+classification:
+  num_predict: 16
+  temperature: 0.0
+  max_retries: 3
