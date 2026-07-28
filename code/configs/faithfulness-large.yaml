@@ -1,0 +1,30 @@
+run:
+  name: "faithfulness-large-policy-3d67db"
+  notes: "Solidified pipeline — D7 faithfulness ablation against the new induction-large policy on n=300 HC3 test (3x prior n=100). 3 policies × 300 = 900 classifications. ~5-6 min wall-clock at 2.8 examples/s with E4B locked in VRAM."
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+data:
+  split: "all"
+  seed: 42
+  min_chars: 32
+  source: "test"
+  sample_size: 100
+
+splits:
+  train: 0.60
+  val: 0.20
+  test: 0.20
+  seed: 42
+
+faithfulness:
+  best_policy: "2026-04-26T17-42-47_3d67db"
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  return_logprobs: true
+  top_logprobs_k: 20

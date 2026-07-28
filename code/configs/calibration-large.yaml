@@ -1,0 +1,26 @@
+run:
+  name: "calibration-large-policy-3d67db"
+  notes: "Solidified pipeline — sample_size=20000 balanced → val=4000 + test=4000 on E4B. Uses the policy frozen by induction-large (winner 2026-04-26T17-42-47_3d67db, F0.5=0.956 on n=500 val). ~3.3h wall-clock at ~1.5s/call."
+
+model:
+  name: "gemma4:e4b"
+  host: "http://localhost:11434"
+
+policy:
+  path: "logs/policies/2026-04-26T17-42-47_3d67db.md"
+
+splits:
+  split: "all"
+  sample_size: 20000   # balanced 10000 human / 10000 AI → val=4000 + test=4000
+  seed: 42
+  min_chars: 32
+  train: 0.60
+  val: 0.20
+  test: 0.20
+
+classification:
+  num_predict: 1
+  temperature: 0.0
+  max_retries: 3
+  think: false
+  top_logprobs_k: 20

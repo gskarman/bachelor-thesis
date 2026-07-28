@@ -108,26 +108,75 @@ def extract_features(
     temperature: float,
     think: bool,
     logger: logging.Logger,
+    out_path: pathlib.Path | None = None,
 ) -> list[FeatureRow]:
+    """Classify each example and (optionally) write each result to `out_path` as a
+    JSONL line as it lands. If `out_path` already exists, existing rows are loaded
+    and their indices skipped — a crashed/killed run can resume without losing work.
+    """
     rows: list[FeatureRow] = []
+    done_idxs: set[int] = set()
+
+    if out_path is not None and out_path.exists():
+        with out_path.open() as fr:
+            for line in fr:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                    rows.append(FeatureRow(**d))
+                    done_idxs.add(d["idx"])
+                except Exception as e:
+                    logger.warning(f"  bad jsonl row in {out_path.name}: {e}")
+        if done_idxs:
+            logger.info(f"  resume: loaded {len(done_idxs)} existing rows from {out_path.name}")
+
+    total_to_classify = len(examples) - len(done_idxs)
+    if total_to_classify == 0:
+        logger.info(f"  all {len(examples)} examples already classified — skipping")
+        rows.sort(key=lambda r: r.idx)
+        return rows
+
+    f_out = out_path.open("a") if out_path is not None else None
+    new_done = 0
     start = time.time()
-    for i, ex in enumerate(examples, 1):
-        try:
-            pred = classify(
-                client, ex.text,
-                num_predict=num_predict, temperature=temperature, think=think,
-                system_prompt=policy,
-                return_logprobs=True, top_logprobs_k=top_logprobs_k,
-            )
-            rows.append(_make_feature_row(i - 1, ex, pred.label, pred.logprobs, None))
-        except UnparseableResponse as e:
-            rows.append(_make_feature_row(i - 1, ex, -1, None, str(e)))
-        except Exception as e:
-            err = f"{type(e).__name__}: {e}"
-            logger.warning(f"[red]{i}/{len(examples)}[/red] {err}")
-            rows.append(_make_feature_row(i - 1, ex, -1, None, err))
-        if i % 50 == 0 or i == len(examples):
-            logger.info(f"  {i}/{len(examples)} ({(time.time() - start):.1f}s)")
+    try:
+        for i, ex in enumerate(examples, 1):
+            idx = i - 1
+            if idx in done_idxs:
+                continue
+            try:
+                pred = classify(
+                    client, ex.text,
+                    num_predict=num_predict, temperature=temperature, think=think,
+                    system_prompt=policy,
+                    return_logprobs=True, top_logprobs_k=top_logprobs_k,
+                )
+                row = _make_feature_row(idx, ex, pred.label, pred.logprobs, None)
+            except UnparseableResponse as e:
+                row = _make_feature_row(idx, ex, -1, None, str(e))
+            except Exception as e:
+                err = f"{type(e).__name__}: {e}"
+                logger.warning(f"[red]{i}/{len(examples)}[/red] {err}")
+                row = _make_feature_row(idx, ex, -1, None, err)
+            new_done += 1
+            rows.append(row)
+            if f_out is not None:
+                f_out.write(json.dumps(asdict(row)) + "\n")
+                f_out.flush()
+            if new_done % 50 == 0 or new_done == total_to_classify:
+                elapsed = time.time() - start
+                rate = new_done / max(elapsed, 1.0)
+                eta_min = (total_to_classify - new_done) / max(rate, 1e-6) / 60.0
+                logger.info(
+                    f"  {new_done}/{total_to_classify} new ({elapsed:.0f}s, {rate:.1f}/s, ETA {eta_min:.1f}min)"
+                )
+    finally:
+        if f_out is not None:
+            f_out.close()
+
+    rows.sort(key=lambda r: r.idx)
     return rows
 
 
@@ -345,14 +394,18 @@ def _append_runs_log(run_id: str, config: dict[str, Any], best: dict[str, Any]) 
         f.write(line)
 
 
-def run_calibration(config_path: pathlib.Path) -> pathlib.Path:
+def run_calibration(config_path: pathlib.Path, *, resume_run_id: str | None = None) -> pathlib.Path:
     config = yaml.safe_load(config_path.read_text())
-    run_id = _mint_run_id(config)
-    run_dir = RUNS_DIR / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=False))
+    if resume_run_id is not None:
+        run_id = resume_run_id
+        run_dir = RUNS_DIR / run_id
+    else:
+        run_id = _mint_run_id(config)
+        run_dir = RUNS_DIR / run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        (run_dir / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=False))
     logger = _setup_logger(run_dir)
-    logger.info(f"[bold]Calibration[/bold] {run_id}")
+    logger.info(f"[bold]Calibration[/bold] {run_id}{' (resumed)' if resume_run_id else ''}")
 
     # --- Resolve policy
     policy_path = pathlib.Path(config["policy"]["path"])
@@ -400,6 +453,7 @@ def run_calibration(config_path: pathlib.Path) -> pathlib.Path:
         temperature=cls_cfg.get("temperature", 0.0),
         think=cls_cfg.get("think", False),
         logger=logger,
+        out_path=run_dir / "features_val.jsonl",
     )
     logger.info("Extracting logprobs on test…")
     test_rows = extract_features(
@@ -409,6 +463,7 @@ def run_calibration(config_path: pathlib.Path) -> pathlib.Path:
         temperature=cls_cfg.get("temperature", 0.0),
         think=cls_cfg.get("think", False),
         logger=logger,
+        out_path=run_dir / "features_test.jsonl",
     )
 
     # --- Build feature matrices
@@ -473,13 +528,8 @@ def run_calibration(config_path: pathlib.Path) -> pathlib.Path:
         "raw_argmax_test": raw_report,
     }
     (run_dir / "calibration.json").write_text(json.dumps(out, indent=2))
-    # Persist the extracted feature rows so calibrators can be re-fit without re-running Ollama
-    with (run_dir / "features_val.jsonl").open("w") as f:
-        for r in val_rows:
-            f.write(json.dumps(asdict(r)) + "\n")
-    with (run_dir / "features_test.jsonl").open("w") as f:
-        for r in test_rows:
-            f.write(json.dumps(asdict(r)) + "\n")
+    # features_val.jsonl and features_test.jsonl are written incrementally in
+    # extract_features (each row flushed as it's produced) — see resume logic there.
 
     best = t_report if chosen_name == "T1_threshold" else l_report
     _au = f"{best['auroc']:.3f}" if best['auroc'] is not None else "n/a"
@@ -499,12 +549,28 @@ def run_calibration(config_path: pathlib.Path) -> pathlib.Path:
 
 def main() -> None:
     p = argparse.ArgumentParser(prog="aitd-calibrate")
-    p.add_argument("--config", required=True, type=pathlib.Path)
+    p.add_argument("--config", type=pathlib.Path, help="YAML config (required for a new run)")
+    p.add_argument("--resume", type=str, default=None, help="Run ID to resume — reuses run_dir + its config.yaml")
     args = p.parse_args()
-    if not args.config.exists():
-        console.print(f"[red]Config not found:[/red] {args.config}")
-        sys.exit(1)
-    run_calibration(args.config)
+
+    if args.resume:
+        run_dir = RUNS_DIR / args.resume
+        if not run_dir.exists():
+            console.print(f"[red]Resume run dir not found:[/red] {run_dir}")
+            sys.exit(1)
+        cfg = run_dir / "config.yaml"
+        if not cfg.exists():
+            console.print(f"[red]No config.yaml in {run_dir}[/red]")
+            sys.exit(1)
+        run_calibration(cfg, resume_run_id=args.resume)
+    else:
+        if args.config is None:
+            console.print("[red]--config is required for a new run (or pass --resume <run_id>)[/red]")
+            sys.exit(1)
+        if not args.config.exists():
+            console.print(f"[red]Config not found:[/red] {args.config}")
+            sys.exit(1)
+        run_calibration(args.config)
 
 
 if __name__ == "__main__":
