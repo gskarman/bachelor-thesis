@@ -40,6 +40,7 @@ cd code
 uv venv                         # or python -m venv .venv
 source .venv/bin/activate
 uv pip install -e .             # or pip install -e .
+source ../scripts/ollama-env.sh # env vars for keep_alive / parallelism / flash-attn; see docs/ollama-config.md
 ollama serve &                  # if not already running
 ollama pull gemma4:e4b          # dev default; pull `gemma4:31b` for full-quality runs
 ```

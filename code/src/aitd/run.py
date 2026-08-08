@@ -89,6 +89,9 @@ def run_experiment(config_path: pathlib.Path) -> pathlib.Path:
     cls_cfg = config.get("classification", {})
     return_logprobs = bool(cls_cfg.get("return_logprobs", False))
     top_logprobs_k = int(cls_cfg.get("top_logprobs_k", 10))
+    keep_alive = cls_cfg.get("keep_alive", "1h")
+    num_ctx = cls_cfg.get("num_ctx")
+    num_batch = cls_cfg.get("num_batch")
 
     preds_file = run_dir / "predictions.jsonl"
     labels: list[int] = []
@@ -106,6 +109,9 @@ def run_experiment(config_path: pathlib.Path) -> pathlib.Path:
                     think=cls_cfg.get("think", False),
                     return_logprobs=return_logprobs,
                     top_logprobs_k=top_logprobs_k,
+                    keep_alive=keep_alive,
+                    num_ctx=num_ctx,
+                    num_batch=num_batch,
                 )
                 pred_label = pred.label
                 raw = pred.raw_response

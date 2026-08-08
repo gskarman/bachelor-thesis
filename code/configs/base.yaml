@@ -18,3 +18,14 @@ classification:
   temperature: 0.0
   max_retries: 3
   think: false  # Gemma 4 is a thinking model — disable for single-token classification
+  # Runtime efficiency knobs — see docs/ollama-config.md for rationale.
+  # keep_alive keeps the model resident across run pauses (eliminates the 5-min
+  # unload sawtooth). Does NOT affect model output; safe to leave on by default.
+  keep_alive: "1h"
+  # Optional; opt in after verifying your longest passage fits. Lower num_ctx
+  # shrinks the KV-cache allocation dramatically (Gemma 4 default is 32k). For
+  # HC3 single-token classification, 2048 is comfortable headroom.
+  # num_ctx: 2048
+  # Ollama default is 512. Raising to 1024 speeds prefill on long prompts if
+  # memory permits; identical logprobs either way.
+  # num_batch: 512
